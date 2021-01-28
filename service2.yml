@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-demo
+  labels:
+    app: backend
+    app-version: "1.0.0"
+spec: 
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec: 
+      containers:
+      - name: backend
+        image: jyotibkaur/repo
+        env:
+        - name: SECRETS_DEMO_USER
+          value: "jyoti"
+        - name: ACTIVE_PROFILE
+          value: "test"
+        - name: CRED_FILE
+          value: "file:/etc/app/amqcred"
+        volumeMounts:
+          - name: app-creds
+            mountPath: /etc/app
+      initContainers:
+      - name: vault-init 
+        image: jyotibkaur/repo 
+        command:
+           - "sh"
+           - "-c"
+           - >
+            curl http://mocktarget.apigee.net/ > /etc/app/amq-creds.json;
+            echo "RDS_APIKEY="$(cat /etc/app/amq-creds.json) >> /etc/app/amqcred;
+        volumeMounts:
+          - name: app-creds
+            mountPath: /etc/app    
+      volumes: 
+      - name: app-creds  
+        emptyDir: {}  
+        
+
+    
+        
